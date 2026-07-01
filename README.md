@@ -1,35 +1,27 @@
-# 📚 Library API (Symfony)
+# Library API (Symfony)
 
-Proste REST API do zarządzania książkami w systemie bibliotecznym.
-Aplikacja uruchamiana jest w Dockerze wraz z PostgreSQL.
+Proste REST API do zarzadzania ksiazkami w systemie bibliotecznym.
+Aplikacja uruchamiana jest w Dockerze razem z PostgreSQL.
 
----
-
-# 🚀 Uruchomienie projektu
+## Uruchomienie projektu
 
 ```bash
 docker compose up -d
 ```
 
-Instalacja zależności:
+Podczas startu kontener PHP instaluje zaleznosci Composer i wykonuje migracje bazy danych.
 
-```bash
-docker compose exec php composer install
+API jest dostepne pod adresem:
+
+```text
+https://localhost/api
 ```
 
-Migracje:
+Przy lokalnych requestach przez `curl` moze byc potrzebna flaga `-k`, poniewaz FrankenPHP/Caddy uzywa lokalnego certyfikatu HTTPS.
 
-```bash
-docker compose exec php php bin/console doctrine:migrations:migrate
-```
+## Endpointy
 
----
-
-# Endpointy
-
-## Create book
-
-### Request
+### Create book
 
 ```http
 POST /api/books
@@ -38,35 +30,31 @@ Content-Type: application/json
 
 ```json
 {
-    "serialNumber": 123456,
-    "title": "The Hobbit",
-    "author": "J.R.R. Tolkien"
+  "serialNumber": "123456",
+  "title": "The Hobbit",
+  "author": "J.R.R. Tolkien"
 }
 ```
 
-### Response (201)
+Response `201`:
 
 ```json
 {
-    "id": 1,
-    "serialNumber": "123456",
-    "title": "The Hobbit",
-    "author": "J.R.R. Tolkien",
-    "status": "available"
+  "id": 1,
+  "serialNumber": "123456",
+  "title": "The Hobbit",
+  "author": "J.R.R. Tolkien",
+  "status": "available"
 }
 ```
 
----
-
-## Get all books
-
-### Request
+### Get all books
 
 ```http
 GET /api/books
 ```
 
-### Response (200)
+Response `200`:
 
 ```json
 [
@@ -82,15 +70,13 @@ GET /api/books
 ]
 ```
 
----
-
-## 🔍 Get single book
+### Get single book
 
 ```http
 GET /api/books/{id}
 ```
 
-### Response (200)
+Response `200`:
 
 ```json
 {
@@ -104,87 +90,72 @@ GET /api/books/{id}
 }
 ```
 
----
-
-## ✏️ Update book
+### Update book
 
 ```http
 PATCH /api/books/{id}
+Content-Type: application/json
 ```
-
-### Request
 
 ```json
 {
-    "title": "The Hobbit - updated"
+  "title": "The Hobbit - updated"
 }
 ```
 
-### Response (200)
+Response `200`:
 
 ```json
 {
-    "id": 1,
-    "serialNumber": "234312",
-    "title": "Sample Book Title",
-    "author": "John Doe",
-    "status": "available",
-    "borrowedBy": null,
-    "borrowedAt": null
+  "id": 1,
+  "serialNumber": "123456",
+  "title": "The Hobbit - updated",
+  "author": "J.R.R. Tolkien",
+  "status": "available",
+  "borrowedBy": null,
+  "borrowedAt": null
 }
 ```
 
----
-
-## ❌ Delete book
+### Delete book
 
 ```http
 DELETE /api/books/{id}
 ```
 
-### Response
+Response `204 No Content`.
 
-```
-204 No Content
-```
-
----
-
-## 📥 Borrow book
+### Borrow book
 
 ```http
 PATCH /api/books/{id}/borrow
 Content-Type: application/json
 ```
 
-### Request
-
 ```json
 {
-    "libraryCardNumber": "654321"
+  "libraryCardNumber": "654321"
 }
 ```
 
-### Response (200)
+Response `200`:
 
 ```json
 {
-    "id": 1,
-    "status": "borrowed",
-    "borrowedBy": "654321",
-    "borrowedAt": "2026-07-01 19:30:03"
+  "id": 1,
+  "status": "borrowed",
+  "borrowedBy": "654321",
+  "borrowedAt": "2026-07-01 19:30:03"
 }
 ```
 
----
-
-## 📤 Return book
+### Return book
 
 ```http
 PATCH /api/books/{id}/return
 ```
 
-### Response (200)
+Response `200`:
 
 ```json
 {
@@ -195,77 +166,81 @@ PATCH /api/books/{id}/return
 }
 ```
 
----
+## Error handling
 
-# ⚠️ Error handling
+Wszystkie bledy zwracane sa w formacie JSON:
 
-Wszystkie błędy zwracane są w formacie JSON.
+```json
+{
+  "message": "Error message",
+  "code": 400,
+  "errors": {}
+}
+```
 
----
+### Validation error
 
-## ❌ Validation error (422)
+Response `422`:
 
 ```json
 {
   "message": "Validation failed",
+  "code": 422,
   "errors": {
-    "libraryCardNumber": [
-      "Library card number must be exactly 6 digits"
+    "serialNumber": [
+      "Serial number must be exactly 6 digits"
     ]
   }
 }
 ```
 
----
+### Conflict
 
-## ❌ Conflict (409)
-
-Przykład: próba wypożyczenia już wypożyczonej książki
+Response `409`:
 
 ```json
 {
-  "error": "Book is already borrowed",
-  "code": 409
+  "message": "Book is already borrowed",
+  "code": 409,
+  "errors": {}
 }
 ```
 
----
+### Not found
 
-## ❌ Not found (404)
+Response `404`:
 
 ```json
 {
-  "error": "Not Found",
-  "code": 404
+  "message": "Not Found",
+  "code": 404,
+  "errors": {}
 }
 ```
 
----
+### Server error
 
-## ❌ Server error (500)
+Response `500`:
 
 ```json
 {
-  "error": "Internal Server Error",
-  "code": 500
+  "message": "Internal Server Error",
+  "code": 500,
+  "errors": {}
 }
 ```
 
----
+## Tech stack
 
-# 🧱 Tech stack
-
-* PHP 8+
+* PHP 8.5
 * Symfony 8.1
 * PostgreSQL
 * Doctrine ORM
 * Docker / Docker Compose
 
----
+## Notes
 
-# 📌 Notes
-
-* Authentication is not implemented (as per requirements)
-* Serial number and library card number are 6-digit numeric values
-* Book status is handled via enum (`available`, `borrowed`)
-* Date format is `Y-m-d H:i:s
+* Authentication and authorization are intentionally omitted.
+* Serial number and library card number must be six digits.
+* Book status is handled by enum: `available`, `borrowed`.
+* Date format is `Y-m-d H:i:s`.

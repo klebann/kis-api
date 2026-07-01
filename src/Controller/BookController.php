@@ -168,6 +168,8 @@ class BookController
             'title' => $book->getTitle(),
             'author' => $book->getAuthor(),
             'status' => $book->getStatus()->value,
+            'borrowedBy' => $book->getBorrowedBy(),
+            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
         ]);
     }
 
