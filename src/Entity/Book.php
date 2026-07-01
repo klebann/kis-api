@@ -25,9 +25,11 @@ class Book
     private string $serialNumber;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Title is required')]
     private ?string $title = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Author is required')]
     private ?string $author = null;
 
     #[ORM\Column(enumType: BookStatus::class)]
