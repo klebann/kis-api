@@ -16,13 +16,18 @@ class BookRepository extends ServiceEntityRepository
         parent::__construct($registry, Book::class);
     }
 
-    public function existsBySerialNumber(string $serialNumber): bool
+    public function existsBySerialNumber(string $serialNumber, ?int $excludeId = null): bool
     {
-        return (bool)$this->createQueryBuilder('b')
+        $qb = $this->createQueryBuilder('b')
             ->select('1')
             ->andWhere('b.serialNumber = :sn')
-            ->setParameter('sn', $serialNumber)
-            ->getQuery()
-            ->getOneOrNullResult();
+            ->setParameter('sn', $serialNumber);
+
+        if ($excludeId !== null) {
+            $qb->andWhere('b.id != :excludeId')
+                ->setParameter('excludeId', $excludeId);
+        }
+
+        return (bool) $qb->getQuery()->getOneOrNullResult();
     }
 }
