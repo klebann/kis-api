@@ -35,7 +35,6 @@ class BookController
     public function create(
         Request $request,
         EntityManagerInterface $em,
-        BookRepository $bookRepository,
         ValidatorInterface $validator
     ): JsonResponse
     {
@@ -59,10 +58,6 @@ class BookController
 
         if (count($errors) > 0) {
             throw new ValidationFailedException($book, $errors);
-        }
-
-        if ($bookRepository->existsBySerialNumber($book->getSerialNumber())) {
-            throw new ConflictHttpException('Serial number already exists');
         }
 
         try {
@@ -95,7 +90,6 @@ class BookController
         Book                   $book,
         Request                $request,
         EntityManagerInterface $em,
-        BookRepository         $bookRepository,
         ValidatorInterface     $validator
     ): JsonResponse
     {
@@ -121,11 +115,6 @@ class BookController
 
         if (count($errors) > 0) {
             throw new ValidationFailedException($book, $errors);
-        }
-
-        if (isset($data['serialNumber'])
-            && $bookRepository->existsBySerialNumber($book->getSerialNumber(), $book->getId())) {
-            throw new ConflictHttpException('Serial number already exists');
         }
 
         try {
