@@ -145,6 +145,8 @@ DELETE /api/books/{id}
 
 Response `204 No Content`.
 
+> **Note:** The API allows deleting books regardless of their borrowing status. The assignment does not define any business restrictions for the delete operation. In a production system, this behavior could be restricted or replaced with a soft delete, depending on the business requirements.
+
 ### Borrow book
 
 ```http

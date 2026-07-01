@@ -219,7 +219,7 @@ class BookControllerTest extends WebTestCase
         $book = $this->createBook($client);
 
         $client->request(
-            'PATCH',
+            'POST',
             '/api/books/'.$book['id'].'/borrow',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode(['libraryCardNumber' => '654321'], JSON_THROW_ON_ERROR),
@@ -239,7 +239,7 @@ class BookControllerTest extends WebTestCase
         $book = $this->createBook($client);
 
         $client->request(
-            'PATCH',
+            'POST',
             '/api/books/'.$book['id'].'/borrow',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode(['libraryCardNumber' => 'abc'], JSON_THROW_ON_ERROR),
@@ -257,7 +257,7 @@ class BookControllerTest extends WebTestCase
         $book = $this->createBook($client);
 
         $client->request(
-            'PATCH',
+            'POST',
             '/api/books/'.$book['id'].'/borrow',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode(['libraryCardNumber' => '654321'], JSON_THROW_ON_ERROR),
@@ -265,7 +265,7 @@ class BookControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         $client->request(
-            'PATCH',
+            'POST',
             '/api/books/'.$book['id'].'/borrow',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode(['libraryCardNumber' => '111111'], JSON_THROW_ON_ERROR),
@@ -282,14 +282,14 @@ class BookControllerTest extends WebTestCase
         $book = $this->createBook($client);
 
         $client->request(
-            'PATCH',
+            'POST',
             '/api/books/'.$book['id'].'/borrow',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode(['libraryCardNumber' => '654321'], JSON_THROW_ON_ERROR),
         );
         $this->assertResponseIsSuccessful();
 
-        $client->request('PATCH', '/api/books/'.$book['id'].'/return');
+        $client->request('POST', '/api/books/'.$book['id'].'/return');
 
         $this->assertResponseIsSuccessful();
         $data = $this->decodeResponse($client);
@@ -303,7 +303,7 @@ class BookControllerTest extends WebTestCase
         $client = static::createClient();
         $book = $this->createBook($client);
 
-        $client->request('PATCH', '/api/books/'.$book['id'].'/return');
+        $client->request('POST', '/api/books/'.$book['id'].'/return');
 
         $this->assertResponseStatusCodeSame(409);
         $data = $this->decodeResponse($client);

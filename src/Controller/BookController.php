@@ -3,22 +3,19 @@
 namespace App\Controller;
 
 use App\DTO\BorrowBookRequest;
+use App\DTO\CreateBookRequest;
+use App\DTO\UpdateBookRequest;
 use App\Entity\Book;
-use App\Enum\BookStatus;
 use App\Repository\BookRepository;
 use App\Service\BookService;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Routing\Attribute\Route;
 
-class BookController
+class BookController extends BaseController
 {
     #[Route('/books', methods: ['GET'])]
     public function list(BookRepository $bookRepository): JsonResponse
@@ -26,46 +23,26 @@ class BookController
         $books = $bookRepository->findAll();
 
         return new JsonResponse(array_map(
-            static fn (Book $book) => $book->toArray(),
+            static fn(Book $book) => $book->toArray(),
             $books,
         ));
     }
 
     #[Route('/books', methods: ['POST'])]
-    public function create(
-        Request $request,
-        EntityManagerInterface $em,
-        ValidatorInterface $validator
-    ): JsonResponse
+    public function create(Request $request, BookService $service): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data) {
-            throw new BadRequestHttpException('Invalid JSON');
-        }
+        $data = $this->decodeJson($request);
 
         if (!isset($data['serialNumber'], $data['title'], $data['author'])) {
             throw new BadRequestHttpException('Missing required fields');
         }
 
-        $book = new Book();
-        $book->setSerialNumber($data['serialNumber']);
-        $book->setTitle($data['title']);
-        $book->setAuthor($data['author']);
-        $book->setStatus(BookStatus::AVAILABLE);
+        $dto = new CreateBookRequest();
+        $dto->serialNumber = $data['serialNumber'] ?? null;
+        $dto->title = $data['title'] ?? null;
+        $dto->author = $data['author'] ?? null;
 
-        $errors = $validator->validate($book);
-
-        if (count($errors) > 0) {
-            throw new ValidationFailedException($book, $errors);
-        }
-
-        try {
-            $em->persist($book);
-            $em->flush();
-        } catch (UniqueConstraintViolationException) {
-            throw new ConflictHttpException('Serial number already exists');
-        }
+        $book = $service->create($dto);
 
         return new JsonResponse($book->toArray(), 201);
     }
@@ -86,76 +63,38 @@ class BookController
     }
 
     #[Route('/books/{id}', methods: ['PATCH'])]
-    public function update(
-        Book                   $book,
-        Request                $request,
-        EntityManagerInterface $em,
-        ValidatorInterface     $validator
-    ): JsonResponse
+    public function update(Book $book, Request $request, BookService $service): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = $this->decodeJson($request);
 
-        if ($data === null) {
-            throw new BadRequestHttpException('Invalid JSON');
-        }
+        $dto = new UpdateBookRequest();
+        $dto->serialNumber = $data['serialNumber'] ?? null;
+        $dto->title = $data['title'] ?? null;
+        $dto->author = $data['author'] ?? null;
 
-        if (isset($data['serialNumber'])) {
-            $book->setSerialNumber($data['serialNumber']);
-        }
-
-        if (isset($data['title'])) {
-            $book->setTitle($data['title']);
-        }
-
-        if (isset($data['author'])) {
-            $book->setAuthor($data['author']);
-        }
-
-        $errors = $validator->validate($book);
-
-        if (count($errors) > 0) {
-            throw new ValidationFailedException($book, $errors);
-        }
-
-        try {
-            $em->flush();
-        } catch (UniqueConstraintViolationException) {
-            throw new ConflictHttpException('Serial number already exists');
-        }
+        $book = $service->update($book, $dto);
 
         return new JsonResponse($book->toArray());
     }
 
-    #[Route('/books/{id}/borrow', methods: ['PATCH'])]
+    #[Route('/books/{id}/borrow', methods: ['POST'])]
     public function borrow(
-        Book               $book,
-        Request            $request,
-        BookService        $service,
-        ValidatorInterface $validator
+        Book        $book,
+        Request     $request,
+        BookService $service,
     ): JsonResponse
     {
-
-        $data = json_decode($request->getContent(), true);
-
-        if ($data === null) {
-            throw new BadRequestHttpException('Invalid JSON');
-        }
+        $data = $this->decodeJson($request);
 
         $dto = new BorrowBookRequest();
-        $dto->libraryCardNumber = $data['libraryCardNumber'] ?? '';
+        $dto->libraryCardNumber = $data['libraryCardNumber'] ?? null;
 
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            throw new ValidationFailedException($dto, $errors);
-        }
-
-        $service->borrow($book, $dto->libraryCardNumber);
+        $book = $service->borrow($book, $dto);
 
         return new JsonResponse($book->toArray());
     }
 
-    #[Route('/books/{id}/return', methods: ['PATCH'])]
+    #[Route('/books/{id}/return', methods: ['POST'])]
     public function return(Book $book, BookService $service): JsonResponse
     {
         $service->return($book);
