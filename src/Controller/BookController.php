@@ -2,18 +2,23 @@
 
 namespace App\Controller;
 
+use App\DTO\BorrowBookRequest;
 use App\Entity\Book;
 use App\Enum\BookStatus;
 use App\Repository\BookRepository;
+use App\Service\BookService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 class BookController
 {
-    #[Route('/api/books', methods: ['GET'])]
+    #[Route('/books', methods: ['GET'])]
     public function list(BookRepository $bookRepository): JsonResponse
     {
         $books = $bookRepository->findAll();
@@ -33,10 +38,18 @@ class BookController
         return new JsonResponse($data);
     }
 
-    #[Route('/api/books', methods: ['POST'])]
+    #[Route('/books', methods: ['POST'])]
     public function create(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
+
+        if (!$data) {
+            throw new BadRequestHttpException('Invalid JSON');
+        }
+
+        if (!isset($data['serialNumber'], $data['title'], $data['author'])) {
+            throw new BadRequestHttpException('Missing required fields');
+        }
 
         $book = new Book();
         $book->setSerialNumber($data['serialNumber']);
@@ -56,7 +69,7 @@ class BookController
         ], 201);
     }
 
-    #[Route('/api/books/{id}', methods: ['GET'])]
+    #[Route('/books/{id}', methods: ['GET'])]
     public function getOne(Book $book): JsonResponse
     {
         return new JsonResponse([
@@ -70,7 +83,7 @@ class BookController
         ]);
     }
 
-    #[Route('/api/books/{id}', methods: ['DELETE'])]
+    #[Route('/books/{id}', methods: ['DELETE'])]
     public function delete(Book $book, EntityManagerInterface $em): JsonResponse
     {
         $em->remove($book);
@@ -79,14 +92,22 @@ class BookController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/books/{id}', methods: ['PATCH'])]
+    #[Route('/books/{id}', methods: ['PATCH'])]
     public function update(
         Book                   $book,
         Request                $request,
         EntityManagerInterface $em
     ): JsonResponse
     {
-        $data = json_decode($request->getContent(), true) ?? [];
+        $data = json_decode($request->getContent(), true);
+
+        if ($data === null) {
+            throw new BadRequestHttpException('Invalid JSON');
+        }
+
+        if (isset($data['serialNumber'])) {
+            $book->setSerialNumber($data['serialNumber']);
+        }
 
         if (isset($data['title'])) {
             $book->setTitle($data['title']);
@@ -94,10 +115,6 @@ class BookController
 
         if (isset($data['author'])) {
             $book->setAuthor($data['author']);
-        }
-
-        if (isset($data['serialNumber'])) {
-            $book->setSerialNumber($data['serialNumber']);
         }
 
         $em->flush();
@@ -108,6 +125,52 @@ class BookController
             'title' => $book->getTitle(),
             'author' => $book->getAuthor(),
             'status' => $book->getStatus()->value,
+        ]);
+    }
+
+    #[Route('/books/{id}/borrow', methods: ['PATCH'])]
+    public function borrow(
+        Book $book,
+        Request $request,
+        BookService $service,
+        ValidatorInterface $validator
+    ): JsonResponse {
+
+        $data = json_decode($request->getContent(), true);
+
+        if ($data === null) {
+            throw new BadRequestHttpException('Invalid JSON');
+        }
+
+        $dto = new BorrowBookRequest();
+        $dto->libraryCardNumber = $data['libraryCardNumber'] ?? '';
+
+        $errors = $validator->validate($dto);
+
+        if (count($errors) > 0) {
+            throw new ValidationFailedException($dto, $errors);
+        }
+
+        $service->borrow($book, $dto->libraryCardNumber);
+
+        return new JsonResponse([
+            'id' => $book->getId(),
+            'status' => $book->getStatus()->value,
+            'borrowedBy' => $book->getBorrowedBy(),
+            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    #[Route('/books/{id}/return', methods: ['PATCH'])]
+    public function return(Book $book, BookService $service): JsonResponse
+    {
+        $service->return($book);
+
+        return new JsonResponse([
+            'id' => $book->getId(),
+            'status' => $book->getStatus()->value,
+            'borrowedBy' => $book->getBorrowedBy(),
+            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
         ]);
     }
 }
