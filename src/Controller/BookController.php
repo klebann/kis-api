@@ -7,10 +7,12 @@ use App\Entity\Book;
 use App\Enum\BookStatus;
 use App\Repository\BookRepository;
 use App\Service\BookService;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -51,6 +53,13 @@ class BookController
             throw new BadRequestHttpException('Missing required fields');
         }
 
+        $existing = $em->getRepository(Book::class)
+            ->findOneBy(['serialNumber' => $data['serialNumber']]);
+
+        if ($existing) {
+            throw new ConflictHttpException('Serial number already exists');
+        }
+
         $book = new Book();
         $book->setSerialNumber($data['serialNumber']);
         $book->setTitle($data['title']);
@@ -58,7 +67,6 @@ class BookController
         $book->setStatus(BookStatus::AVAILABLE);
 
         $em->persist($book);
-        $em->flush();
 
         return new JsonResponse([
             'id' => $book->getId(),
@@ -106,6 +114,9 @@ class BookController
         }
 
         if (isset($data['serialNumber'])) {
+            if ($em->getRepository(Book::class)->existsBySerialNumber($data['serialNumber'])) {
+                throw new ConflictHttpException('Serial number already exists');
+            }
             $book->setSerialNumber($data['serialNumber']);
         }
 
@@ -117,7 +128,11 @@ class BookController
             $book->setAuthor($data['author']);
         }
 
-        $em->flush();
+        try {
+            $em->flush();
+        } catch (UniqueConstraintViolationException) {
+            throw new ConflictHttpException('Serial number already exists');
+        }
 
         return new JsonResponse([
             'id' => $book->getId(),
@@ -130,11 +145,12 @@ class BookController
 
     #[Route('/books/{id}/borrow', methods: ['PATCH'])]
     public function borrow(
-        Book $book,
-        Request $request,
-        BookService $service,
+        Book               $book,
+        Request            $request,
+        BookService        $service,
         ValidatorInterface $validator
-    ): JsonResponse {
+    ): JsonResponse
+    {
 
         $data = json_decode($request->getContent(), true);
 

@@ -15,8 +15,8 @@ class Book
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 6)]
-    private ?string $serialNumber = null;
+    #[ORM\Column(length: 6, unique: true)]
+    private string $serialNumber;
 
     #[ORM\Column(length: 255)]
     private ?string $title = null;
