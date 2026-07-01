@@ -5,9 +5,10 @@ namespace App\Entity;
 use App\Repository\BookRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Enum\BookStatus;
-use Doctrine\DBAL\Types\Types;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BookRepository::class)]
+#[ORM\UniqueConstraint(name: 'uniq_book_serial_number', fields: ['serialNumber'])]
 class Book
 {
     #[ORM\Id]
@@ -15,7 +16,12 @@ class Book
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 6, unique: true)]
+    #[ORM\Column(length: 6)]
+    #[Assert\NotBlank(message: 'Serial number is required')]
+    #[Assert\Regex(
+        pattern: '/^\d{6}$/',
+        message: 'Serial number must be exactly 6 digits'
+    )]
     private string $serialNumber;
 
     #[ORM\Column(length: 255)]

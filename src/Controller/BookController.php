@@ -41,7 +41,11 @@ class BookController
     }
 
     #[Route('/books', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
+    public function create(
+        Request $request,
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
+    ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -53,20 +57,31 @@ class BookController
             throw new BadRequestHttpException('Missing required fields');
         }
 
-        $existing = $em->getRepository(Book::class)
-            ->findOneBy(['serialNumber' => $data['serialNumber']]);
-
-        if ($existing) {
-            throw new ConflictHttpException('Serial number already exists');
-        }
-
         $book = new Book();
         $book->setSerialNumber($data['serialNumber']);
         $book->setTitle($data['title']);
         $book->setAuthor($data['author']);
         $book->setStatus(BookStatus::AVAILABLE);
 
-        $em->persist($book);
+        $errors = $validator->validate($book);
+
+        if (count($errors) > 0) {
+            throw new ValidationFailedException($book, $errors);
+        }
+
+        $existing = $em->getRepository(Book::class)
+            ->findOneBy(['serialNumber' => $book->getSerialNumber()]);
+
+        if ($existing) {
+            throw new ConflictHttpException('Serial number already exists');
+        }
+
+        try {
+            $em->persist($book);
+            $em->flush();
+        } catch (UniqueConstraintViolationException) {
+            throw new ConflictHttpException('Serial number already exists');
+        }
 
         return new JsonResponse([
             'id' => $book->getId(),
@@ -104,7 +119,8 @@ class BookController
     public function update(
         Book                   $book,
         Request                $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface     $validator
     ): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -114,9 +130,6 @@ class BookController
         }
 
         if (isset($data['serialNumber'])) {
-            if ($em->getRepository(Book::class)->existsBySerialNumber($data['serialNumber'])) {
-                throw new ConflictHttpException('Serial number already exists');
-            }
             $book->setSerialNumber($data['serialNumber']);
         }
 
@@ -126,6 +139,21 @@ class BookController
 
         if (isset($data['author'])) {
             $book->setAuthor($data['author']);
+        }
+
+        $errors = $validator->validate($book);
+
+        if (count($errors) > 0) {
+            throw new ValidationFailedException($book, $errors);
+        }
+
+        if (isset($data['serialNumber'])) {
+            $existing = $em->getRepository(Book::class)
+                ->findOneBy(['serialNumber' => $book->getSerialNumber()]);
+
+            if ($existing !== null && $existing->getId() !== $book->getId()) {
+                throw new ConflictHttpException('Serial number already exists');
+            }
         }
 
         try {
