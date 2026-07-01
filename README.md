@@ -19,6 +19,24 @@ https://localhost/api
 
 Przy lokalnych requestach przez `curl` moze byc potrzebna flaga `-k`, poniewaz FrankenPHP/Caddy uzywa lokalnego certyfikatu HTTPS.
 
+## Testy
+
+Testy funkcjonalne obejmuja wszystkie endpointy API (CRUD, wypozyczenie, zwrot) oraz scenariusze bledow (walidacja, konflikty, 404).
+
+Uruchomienie w Dockerze:
+
+```bash
+docker compose exec -e APP_ENV=test php bin/phpunit
+```
+
+Przed pierwszym uruchomieniem upewnij sie, ze zainstalowane sa zaleznosci deweloperskie:
+
+```bash
+docker compose exec php composer install
+```
+
+Testy korzystaja z osobnej bazy `app_test` (konfiguracja w `.env.test`). Przy starcie PHPUnit schemat bazy jest tworzony automatycznie w `tests/bootstrap.php`. Kazdy test dziala w transakcji, ktora jest wycofywana po zakonczeniu (DAMA Doctrine Test Bundle), wiec dane nie przenikaja miedzy testami.
+
 ## Endpointy
 
 ### Create book
@@ -237,6 +255,7 @@ Response `500`:
 * PostgreSQL
 * Doctrine ORM
 * Docker / Docker Compose
+* PHPUnit
 
 ## Notes
 
@@ -244,3 +263,4 @@ Response `500`:
 * Serial number and library card number must be six digits.
 * Book status is handled by enum: `available`, `borrowed`.
 * Date format is `Y-m-d H:i:s`.
+
