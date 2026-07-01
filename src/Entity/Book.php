@@ -26,11 +26,11 @@ class Book
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Title is required')]
-    private ?string $title = null;
+    private string $title;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Author is required')]
-    private ?string $author = null;
+    private string $author;
 
     #[ORM\Column(enumType: BookStatus::class)]
     private BookStatus $status = BookStatus::AVAILABLE;
@@ -46,7 +46,7 @@ class Book
         return $this->id;
     }
 
-    public function getSerialNumber(): ?string
+    public function getSerialNumber(): string
     {
         return $this->serialNumber;
     }
@@ -58,7 +58,7 @@ class Book
         return $this;
     }
 
-    public function getTitle(): ?string
+    public function getTitle(): string
     {
         return $this->title;
     }
@@ -70,7 +70,7 @@ class Book
         return $this;
     }
 
-    public function getAuthor(): ?string
+    public function getAuthor(): string
     {
         return $this->author;
     }
@@ -120,9 +120,9 @@ class Book
     /**
      * @return array{
      *     id: int|null,
-     *     serialNumber: string|null,
-     *     title: string|null,
-     *     author: string|null,
+     *     serialNumber: string,
+     *     title: string,
+     *     author: string,
      *     status: string,
      *     borrowedBy: string|null,
      *     borrowedAt: string|null
