@@ -150,7 +150,7 @@ Response `204 No Content`.
 ### Borrow book
 
 ```http
-PATCH /api/books/{id}/borrow
+POST /api/books/{id}/borrow
 Content-Type: application/json
 ```
 
@@ -177,7 +177,7 @@ Response `200`:
 ### Return book
 
 ```http
-PATCH /api/books/{id}/return
+POST /api/books/{id}/return
 ```
 
 Response `200`:

@@ -76,6 +76,29 @@ class BookService
         return $book;
     }
 
+    private function applyStatusChange(Book $book, string $status, ?string $libraryCardNumber): void
+    {
+        if ($status === BookStatus::BORROWED->value) {
+            if ($book->getStatus() === BookStatus::BORROWED) {
+                throw new ConflictHttpException('Book is already borrowed');
+            }
+
+            $book->setStatus(BookStatus::BORROWED);
+            $book->setBorrowedBy($libraryCardNumber);
+            $book->setBorrowedAt(new \DateTimeImmutable());
+
+            return;
+        }
+
+        if ($book->getStatus() === BookStatus::AVAILABLE) {
+            throw new ConflictHttpException('Book is not borrowed');
+        }
+
+        $book->setStatus(BookStatus::AVAILABLE);
+        $book->setBorrowedBy(null);
+        $book->setBorrowedAt(null);
+    }
+
     public function borrow(Book $book, BorrowBookRequest $dto): Book
     {
         $errors = $this->validator->validate($dto);
@@ -84,13 +107,7 @@ class BookService
             throw new ValidationFailedException($dto, $errors);
         }
 
-        if ($book->getStatus() === BookStatus::BORROWED) {
-            throw new ConflictHttpException('Book is already borrowed');
-        }
-
-        $book->setStatus(BookStatus::BORROWED);
-        $book->setBorrowedBy($dto->libraryCardNumber);
-        $book->setBorrowedAt(new \DateTimeImmutable());
+        $this->applyStatusChange($book, BookStatus::BORROWED->value, $dto->libraryCardNumber);
 
         $this->em->flush();
 
@@ -99,13 +116,7 @@ class BookService
 
     public function return(Book $book): Book
     {
-        if ($book->getStatus() === BookStatus::AVAILABLE) {
-            throw new ConflictHttpException('Book is not borrowed');
-        }
-
-        $book->setStatus(BookStatus::AVAILABLE);
-        $book->setBorrowedBy(null);
-        $book->setBorrowedAt(null);
+        $this->applyStatusChange($book, BookStatus::AVAILABLE->value, null);
 
         $this->em->flush();
 
