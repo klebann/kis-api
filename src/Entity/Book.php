@@ -116,4 +116,28 @@ class Book
 
         return $this;
     }
+
+    /**
+     * @return array{
+     *     id: int|null,
+     *     serialNumber: string|null,
+     *     title: string|null,
+     *     author: string|null,
+     *     status: string,
+     *     borrowedBy: string|null,
+     *     borrowedAt: string|null
+     * }
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'serialNumber' => $this->serialNumber,
+            'title' => $this->title,
+            'author' => $this->author,
+            'status' => $this->status->value,
+            'borrowedBy' => $this->borrowedBy,
+            'borrowedAt' => $this->borrowedAt?->format('Y-m-d H:i:s'),
+        ];
+    }
 }

@@ -44,6 +44,8 @@ class BookControllerTest extends WebTestCase
         $this->assertSame('The Hobbit', $data['title']);
         $this->assertSame('J.R.R. Tolkien', $data['author']);
         $this->assertSame('available', $data['status']);
+        $this->assertNull($data['borrowedBy']);
+        $this->assertNull($data['borrowedAt']);
     }
 
     public function testCreateBookWithInvalidJson(): void

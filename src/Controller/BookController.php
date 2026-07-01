@@ -25,19 +25,10 @@ class BookController
     {
         $books = $bookRepository->findAll();
 
-        $data = array_map(function ($book) {
-            return [
-                'id' => $book->getId(),
-                'serialNumber' => $book->getSerialNumber(),
-                'title' => $book->getTitle(),
-                'author' => $book->getAuthor(),
-                'status' => $book->getStatus()->value,
-                'borrowedBy' => $book->getBorrowedBy(),
-                'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
-            ];
-        }, $books);
-
-        return new JsonResponse($data);
+        return new JsonResponse(array_map(
+            static fn (Book $book) => $book->toArray(),
+            $books,
+        ));
     }
 
     #[Route('/books', methods: ['POST'])]
@@ -83,27 +74,13 @@ class BookController
             throw new ConflictHttpException('Serial number already exists');
         }
 
-        return new JsonResponse([
-            'id' => $book->getId(),
-            'serialNumber' => $book->getSerialNumber(),
-            'title' => $book->getTitle(),
-            'author' => $book->getAuthor(),
-            'status' => $book->getStatus()->value,
-        ], 201);
+        return new JsonResponse($book->toArray(), 201);
     }
 
     #[Route('/books/{id}', methods: ['GET'])]
     public function getOne(Book $book): JsonResponse
     {
-        return new JsonResponse([
-            'id' => $book->getId(),
-            'serialNumber' => $book->getSerialNumber(),
-            'title' => $book->getTitle(),
-            'author' => $book->getAuthor(),
-            'status' => $book->getStatus()->value,
-            'borrowedBy' => $book->getBorrowedBy(),
-            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
-        ]);
+        return new JsonResponse($book->toArray());
     }
 
     #[Route('/books/{id}', methods: ['DELETE'])]
@@ -162,15 +139,7 @@ class BookController
             throw new ConflictHttpException('Serial number already exists');
         }
 
-        return new JsonResponse([
-            'id' => $book->getId(),
-            'serialNumber' => $book->getSerialNumber(),
-            'title' => $book->getTitle(),
-            'author' => $book->getAuthor(),
-            'status' => $book->getStatus()->value,
-            'borrowedBy' => $book->getBorrowedBy(),
-            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
-        ]);
+        return new JsonResponse($book->toArray());
     }
 
     #[Route('/books/{id}/borrow', methods: ['PATCH'])]
@@ -199,12 +168,7 @@ class BookController
 
         $service->borrow($book, $dto->libraryCardNumber);
 
-        return new JsonResponse([
-            'id' => $book->getId(),
-            'status' => $book->getStatus()->value,
-            'borrowedBy' => $book->getBorrowedBy(),
-            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
-        ]);
+        return new JsonResponse($book->toArray());
     }
 
     #[Route('/books/{id}/return', methods: ['PATCH'])]
@@ -212,11 +176,6 @@ class BookController
     {
         $service->return($book);
 
-        return new JsonResponse([
-            'id' => $book->getId(),
-            'status' => $book->getStatus()->value,
-            'borrowedBy' => $book->getBorrowedBy(),
-            'borrowedAt' => $book->getBorrowedAt()?->format('Y-m-d H:i:s'),
-        ]);
+        return new JsonResponse($book->toArray());
     }
 }

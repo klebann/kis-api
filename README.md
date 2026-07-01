@@ -62,7 +62,9 @@ Response `201`:
   "serialNumber": "123456",
   "title": "The Hobbit",
   "author": "J.R.R. Tolkien",
-  "status": "available"
+  "status": "available",
+  "borrowedBy": null,
+  "borrowedAt": null
 }
 ```
 
@@ -161,6 +163,9 @@ Response `200`:
 ```json
 {
   "id": 1,
+  "serialNumber": "123456",
+  "title": "The Hobbit",
+  "author": "J.R.R. Tolkien",
   "status": "borrowed",
   "borrowedBy": "654321",
   "borrowedAt": "2026-07-01 19:30:03"
@@ -178,6 +183,9 @@ Response `200`:
 ```json
 {
   "id": 1,
+  "serialNumber": "123456",
+  "title": "The Hobbit",
+  "author": "J.R.R. Tolkien",
   "status": "available",
   "borrowedBy": null,
   "borrowedAt": null
